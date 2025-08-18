@@ -23,8 +23,10 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install dependencies
+      - name: Create venv & install dependencies
         run: |
+          python -m venv .venv
+          . .venv/bin/activate
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install zappa
@@ -38,6 +40,7 @@ jobs:
 
       - name: Deploy (or update) with Zappa
         run: |
+          . .venv/bin/activate
           zappa update dev || zappa deploy dev
 
 
