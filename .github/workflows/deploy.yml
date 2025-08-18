@@ -41,6 +41,8 @@ jobs:
       - name: Deploy (or update) with Zappa
         run: |
           . .venv/bin/activate
-          zappa update dev || zappa deploy dev
+          # Ensure S3 bucket exists (idempotent)
+          aws s3api head-bucket --bucket nestle-sentiment-zappa-deploy 2>/dev/null || aws s3 mb s3://nestle-sentiment-zappa-deploy --region $AWS_DEFAULT_REGION
+          zappa update dev --settings_file zappa_settings.json || zappa deploy dev --settings_file zappa_settings.json
 
 

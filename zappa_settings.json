@@ -7,6 +7,8 @@
         "timeout_seconds": 30,
         "keep_warm": true,
         "memory_size": 1024,
+        "slim_handler": true,
+        "use_precompiled_packages": true,
         "environment_variables": {
             "DATA_FILE": "nestle_threads_sentiment_analysis_2025-08-12.json"
         }
