@@ -1,6 +1,17 @@
 from flask import Flask, render_template
 import os
+import json
+from urllib.parse import urlparse
 import step_3_dashboard as dashboard
+
+try:
+    import boto3  # type: ignore
+except Exception:  # pragma: no cover
+    boto3 = None  # type: ignore
+try:
+    import requests  # type: ignore
+except Exception:  # pragma: no cover
+    requests = None  # type: ignore
 
 
 app = Flask(__name__)
@@ -15,10 +26,39 @@ def health() -> str:
 def index():
     data_file = os.environ.get(
         "DATA_FILE",
-        "nestle_threads_sentiment_analysis_2025-08-12.json",
+        "static/data/nestle_threads_sentiment_analysis_2025-08-12.json",
     )
 
-    data = dashboard.load_sentiment_data(data_file)
+    data = []
+    # Try S3 / HTTP(S) / local file in that order based on scheme
+    parsed = urlparse(data_file)
+    try:
+        if parsed.scheme == "s3" and boto3 is not None:
+            s3 = boto3.client("s3")
+            bucket = parsed.netloc
+            key = parsed.path.lstrip("/")
+            obj = s3.get_object(Bucket=bucket, Key=key)
+            body = obj["Body"].read()
+            data = json.loads(body)
+        elif parsed.scheme in ("http", "https") and requests is not None:
+            resp = requests.get(data_file, timeout=15)
+            resp.raise_for_status()
+            data = resp.json()
+        else:
+            # Try local paths: as given, app root, and static/data
+            candidate_paths = []
+            candidate_paths.append(data_file)
+            candidate_paths.append(os.path.join(app.root_path, data_file))
+            static_folder = app.static_folder or os.path.join(app.root_path, "static")
+            candidate_paths.append(os.path.join(static_folder, "data", os.path.basename(data_file)))
+            candidate_paths.append(os.path.join(app.root_path, "static", "data", os.path.basename(data_file)))
+            for path in candidate_paths:
+                if os.path.exists(path):
+                    data = dashboard.load_sentiment_data(path)
+                    break
+    except Exception:
+        # Fall back to empty dataset
+        data = []
 
     if not data:
         figures_json = []

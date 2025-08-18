@@ -55,6 +55,7 @@ Thumbs.db
 !requirements.txt
 *.html
 !templates/**.html
+!static/data/**
 *.log
 temp/
 tmp/
