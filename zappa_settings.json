@@ -1,0 +1,16 @@
+{
+    "dev": {
+        "app_function": "app.app",
+        "profile_name": null,
+        "s3_bucket": "nestle-sentiment-zappa-deploy",
+        "runtime": "python3.10",
+        "timeout_seconds": 30,
+        "keep_warm": true,
+        "memory_size": 1024,
+        "environment_variables": {
+            "DATA_FILE": "nestle_threads_sentiment_analysis_2025-08-12.json"
+        }
+    }
+}
+
+

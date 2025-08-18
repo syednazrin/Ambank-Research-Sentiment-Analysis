@@ -51,8 +51,10 @@ Thumbs.db
 
 # Project specific
 *.json
+!zappa_settings.json
 !requirements.txt
 *.html
+!templates/**.html
 *.log
 temp/
 tmp/
