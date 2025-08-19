@@ -9,10 +9,21 @@
         "memory_size": 1024,
         "slim_handler": true,
         "use_precompiled_packages": true,
+        "exclude": [
+            "dont_deploy/*",
+            "dont_deploy/**/*",
+            "myenv/*",
+            "myenv/**/*",
+            ".git/*",
+            ".git/**/*",
+            "*.md",
+            "*.log",
+            "*.json",
+            "!zappa_settings.json",
+            "!static/data/*.json"
+        ],
         "environment_variables": {
             "DATA_FILE": "nestle_threads_sentiment_analysis_2025-08-12.json"
         }
     }
 }
-
-

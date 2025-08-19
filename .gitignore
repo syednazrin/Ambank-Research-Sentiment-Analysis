@@ -60,6 +60,10 @@ Thumbs.db
 temp/
 tmp/
 
+# Exclude development/testing files from deployment
+dont_deploy/
+dont_deploy/**/*
+
 # Jupyter Notebook
 .ipynb_checkpoints
 

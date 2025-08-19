@@ -23,6 +23,13 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
+      - name: Remove dont_deploy folder
+        run: |
+          echo "Removing dont_deploy folder to exclude from deployment..."
+          rm -rf dont_deploy/
+          rm -rf myenv/
+          echo "Cleanup completed"
+
       - name: Create venv & install dependencies
         run: |
           python -m venv .venv
@@ -30,6 +37,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install zappa
+
+      - name: Verify deployment structure
+        run: |
+          echo "Checking project structure..."
+          ls -la
+          echo "Verifying main files exist..."
+          test -f app.py && echo "✓ app.py found" || echo "✗ app.py missing"
+          test -f step_3_dashboard.py && echo "✓ step_3_dashboard.py found" || echo "✗ step_3_dashboard.py missing"
+          test -f zappa_settings.json && echo "✓ zappa_settings.json found" || echo "✗ zappa_settings.json missing"
+          test -d templates && echo "✓ templates directory found" || echo "✗ templates directory missing"
+          test -d static && echo "✓ static directory found" || echo "✗ static directory missing"
+          test ! -d dont_deploy && echo "✓ dont_deploy folder successfully excluded" || echo "✗ dont_deploy folder still present"
 
       - name: Configure AWS credentials (Access Keys)
         uses: aws-actions/configure-aws-credentials@v4
@@ -43,6 +62,15 @@ jobs:
           . .venv/bin/activate
           # Ensure S3 bucket exists (idempotent)
           aws s3api head-bucket --bucket nestle-sentiment-zappa-deploy 2>/dev/null || aws s3 mb s3://nestle-sentiment-zappa-deploy --region $AWS_DEFAULT_REGION
+          
+          # Show zappa settings for debugging
+          echo "Zappa settings:"
+          cat zappa_settings.json
+          
+          # Deploy or update
+          echo "Starting Zappa deployment..."
           zappa update dev --settings_file zappa_settings.json || zappa deploy dev --settings_file zappa_settings.json
+          
+          echo "Deployment completed successfully!"
 
 
