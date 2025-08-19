@@ -19,7 +19,6 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        working-directory: Backend
         run: |
           python -m venv venv
           source venv/bin/activate
@@ -42,7 +41,6 @@ jobs:
 
 
       - name: Deploy to Lambda
-        working-directory: Backend
         run: |
           source venv/bin/activate
           if zappa status main > /dev/null 2>&1; then
