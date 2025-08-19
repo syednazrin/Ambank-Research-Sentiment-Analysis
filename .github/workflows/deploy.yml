@@ -49,6 +49,15 @@ jobs:
           test -d templates && echo "✓ templates directory found" || echo "✗ templates directory missing"
           test -d static && echo "✓ static directory found" || echo "✗ static directory missing"
           test ! -d dont_deploy && echo "✓ dont_deploy folder successfully excluded" || echo "✗ dont_deploy folder still present"
+          
+          # Test imports locally to catch issues early
+          echo "Testing Python imports..."
+          python -c "import app; print('✓ app.py imports successfully')" || echo "✗ app.py import failed"
+          python -c "import step_3_dashboard; print('✓ step_3_dashboard.py imports successfully')" || echo "✗ step_3_dashboard.py import failed"
+          
+          # Run comprehensive deployment test
+          echo "Running comprehensive deployment test..."
+          python test_deployment.py || echo "✗ Deployment test failed - check for issues"
 
       - name: Configure AWS credentials (Access Keys)
         uses: aws-actions/configure-aws-credentials@v4
@@ -60,17 +69,106 @@ jobs:
       - name: Deploy (or update) with Zappa
         run: |
           . .venv/bin/activate
+          
           # Ensure S3 bucket exists (idempotent)
+          echo "Checking/creating S3 bucket..."
           aws s3api head-bucket --bucket nestle-sentiment-zappa-deploy 2>/dev/null || aws s3 mb s3://nestle-sentiment-zappa-deploy --region $AWS_DEFAULT_REGION
           
           # Show zappa settings for debugging
           echo "Zappa settings:"
           cat zappa_settings.json
           
-          # Deploy or update
-          echo "Starting Zappa deployment..."
-          zappa update dev --settings_file zappa_settings.json || zappa deploy dev --settings_file zappa_settings.json
+          # Check if deployment already exists
+          echo "Checking existing deployment status..."
+          DEPLOYMENT_EXISTS=$(zappa status dev --settings_file zappa_settings.json 2>/dev/null && echo "true" || echo "false")
+          echo "Deployment exists: $DEPLOYMENT_EXISTS"
           
-          echo "Deployment completed successfully!"
+          # Deploy or update based on status
+          echo "Starting Zappa deployment process..."
+          if [ "$DEPLOYMENT_EXISTS" = "true" ]; then
+            echo "Updating existing deployment..."
+            zappa update dev --settings_file zappa_settings.json --disable_progress || {
+              echo "Update failed, trying to save and redeploy..."
+              zappa save-python-settings-file dev --settings_file zappa_settings.json || true
+              zappa undeploy dev --settings_file zappa_settings.json --remove-logs || true
+              sleep 10
+              echo "Attempting fresh deployment..."
+              zappa deploy dev --settings_file zappa_settings.json --disable_progress
+            }
+          else
+            echo "Creating new deployment..."
+            zappa deploy dev --settings_file zappa_settings.json --disable_progress || {
+              echo "Deploy failed, retrying once..."
+              sleep 10
+              zappa deploy dev --settings_file zappa_settings.json --disable_progress
+            }
+          fi
+          
+          echo "Getting deployment URL..."
+          LAMBDA_URL=$(zappa status dev --settings_file zappa_settings.json 2>/dev/null | grep -oP 'https://[^\s]+' | head -1 || echo "URL not found")
+          echo "Deployment URL: $LAMBDA_URL"
+          
+          echo "Deployment process completed!"
+
+      - name: Post-deployment health check
+        continue-on-error: true
+        run: |
+          . .venv/bin/activate
+          
+          echo "Waiting for deployment to be ready..."
+          sleep 30
+          
+          echo "Getting final deployment status..."
+          zappa status dev --settings_file zappa_settings.json || echo "Status check failed"
+          
+          # Get the URL again for health check
+          LAMBDA_URL=$(zappa status dev --settings_file zappa_settings.json 2>/dev/null | grep -oP 'https://[^\s]+' | head -1 || echo "")
+          
+          if [ -n "$LAMBDA_URL" ] && [ "$LAMBDA_URL" != "URL not found" ]; then
+            echo "Testing health endpoint: $LAMBDA_URL/health"
+            
+            # Test health endpoint first (more likely to work)
+            for i in {1..3}; do
+              echo "Health check attempt $i/3..."
+              HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$LAMBDA_URL/health" || echo "000")
+              echo "Health endpoint returned: $HEALTH_STATUS"
+              
+              if [ "$HEALTH_STATUS" = "200" ]; then
+                echo "✅ Health check passed!"
+                break
+              else
+                echo "❌ Health check failed with status $HEALTH_STATUS"
+                if [ $i -lt 3 ]; then
+                  echo "Waiting 15 seconds before retry..."
+                  sleep 15
+                fi
+              fi
+            done
+            
+            # Test main endpoint
+            echo "Testing main endpoint: $LAMBDA_URL/"
+            MAIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$LAMBDA_URL/" || echo "000")
+            echo "Main endpoint returned: $MAIN_STATUS"
+            
+            if [ "$MAIN_STATUS" = "200" ]; then
+              echo "✅ Main endpoint is working!"
+            else
+              echo "❌ Main endpoint returned $MAIN_STATUS - checking logs..."
+              echo "Getting recent logs..."
+              zappa tail dev --settings_file zappa_settings.json --since 5m --non-http || echo "Could not retrieve detailed logs"
+              
+              # Try to get CloudWatch logs directly
+              echo "Checking CloudWatch logs..."
+              aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/nazrin-sentiment-dev" 2>/dev/null || echo "CloudWatch logs not accessible"
+              
+              # Show recent error events
+              echo "Recent error events:"
+              aws logs filter-log-events --log-group-name "/aws/lambda/nazrin-sentiment-dev" --start-time $(date -d '5 minutes ago' +%s)000 --filter-pattern "ERROR" 2>/dev/null || echo "No error logs found or not accessible"
+            fi
+          else
+            echo "❌ Could not determine deployment URL for health check"
+          fi
+          
+          echo "Health check completed."
 
 
