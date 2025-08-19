@@ -26,7 +26,7 @@ def health() -> str:
 def index():
     data_file = os.environ.get(
         "DATA_FILE",
-        "static/data/nestle_threads_sentiment_analysis_2025-08-12.json",
+        "static/data/sample_data.json",
     )
 
     data = []

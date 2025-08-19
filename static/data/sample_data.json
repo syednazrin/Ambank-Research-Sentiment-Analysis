@@ -1,0 +1,42 @@
+[
+    {
+        "id": "sample_1",
+        "tweet": "This is a sample positive post about the brand and their excellent products",
+        "confidence_score": 0.85,
+        "reasoning": "Positive language about brand and products",
+        "timestamp": "2025-08-19T10:00:00Z",
+        "thread_id": "thread_1"
+    },
+    {
+        "id": "sample_2", 
+        "tweet": "Neutral opinion about the product features and quality",
+        "confidence_score": 0.55,
+        "reasoning": "Balanced neutral assessment",
+        "timestamp": "2025-08-19T11:00:00Z",
+        "thread_id": "thread_2"
+    },
+    {
+        "id": "sample_3",
+        "tweet": "Not satisfied with the recent changes made to the product line",
+        "confidence_score": 0.25,
+        "reasoning": "Dissatisfaction with product changes",
+        "timestamp": "2025-08-19T12:00:00Z",
+        "thread_id": "thread_3"
+    },
+    {
+        "id": "sample_4",
+        "tweet": "Really love the new campaign and brand messaging they launched",
+        "confidence_score": 0.90,
+        "reasoning": "Strong positive sentiment about campaign",
+        "timestamp": "2025-08-19T13:00:00Z",
+        "thread_id": "thread_4"
+    },
+    {
+        "id": "sample_5",
+        "tweet": "The quality seems average compared to competitors in the market",
+        "confidence_score": 0.45,
+        "reasoning": "Slight negative comparison with competitors",
+        "timestamp": "2025-08-19T14:00:00Z",
+        "thread_id": "thread_5"
+    }
+]

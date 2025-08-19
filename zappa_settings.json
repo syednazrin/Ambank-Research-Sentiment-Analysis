@@ -4,29 +4,15 @@
         "project_name": "nazrin-sentiment",
         "profile_name": null,
         "s3_bucket": "nestle-sentiment-zappa-deploy",
-        "runtime": "python3.10",
-        "timeout_seconds": 30,
+        "runtime": "python3.11",
+        "timeout_seconds": 60,
         "keep_warm": true,
         "memory_size": 1024,
         "slim_handler": true,
         "use_precompiled_packages": true,
         "aws_region": "ap-southeast-1",
-        "exclude": [
-            "dont_deploy/*",
-            "dont_deploy/**/*",
-            "myenv/*",
-            "myenv/**/*",
-            ".git/*",
-            ".git/**/*",
-            "*.md",
-            "*.log",
-            "*.json",
-            "test_deployment.py",
-            "!zappa_settings.json",
-            "!static/data/*.json"
-        ],
         "environment_variables": {
-            "DATA_FILE": "nestle_threads_sentiment_analysis_2025-08-12.json"
+            "DATA_FILE": "static/data/sample_data.json"
         }
     }
 }
