@@ -10,7 +10,7 @@
         "memory_size": 1024,
         "slim_handler": true,
         "use_precompiled_packages": true,
-        "aws_region": "us-east-1",
+        "aws_region": "ap-southeast-1",
         "exclude": [
             "dont_deploy/*",
             "dont_deploy/**/*",
